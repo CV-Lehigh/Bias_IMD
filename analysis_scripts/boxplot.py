@@ -56,5 +56,5 @@ for dataset in all_data:
     plt.title(f"% of manipulated split by saliency of manipulation")
     plt.tight_layout()
     plt.show()
-    plt.savefig(f"mAUC_wrt_saliency_graphs/{dataset}_manip_size.png")
+    plt.savefig(f"manip_size/{dataset}_manip_size.png")
     plt.clf()
