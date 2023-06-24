@@ -44,4 +44,8 @@ Now based on the saliency groups you can get the average area under ROC for seve
 
 ## Supplimental Scripts
 delta_split.py -- Will tell you how many images moved from one saliency group to another after saliency enhancement
+Manipulation Size graphs -- 
+&emsp; 1. Navigate to the 'Exploring_bias_in_IMD/analysis_scipts/' folder
+&emsp; 2. Run ```python find lengths.py```
+&emsp; 3. 
 
