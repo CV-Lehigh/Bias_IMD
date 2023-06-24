@@ -24,13 +24,13 @@ def all_partitions_auc(dataset):
     partition = ['under_two', 'two_to_four', 'four_to_six', 'six_to_eight', 'above_eight']
     manip_scores = load_numpy(f'manip_size/GT_{dataset}.npy')
     for p in partition:
-        section = load_numpy(f'data_splits/5_split/{dataset}_combine_maps_{sal_metric_name}_{split_metric_name}_{p}.npy')
+        section = load_numpy(f'data_splits/5_split/{dataset}_{sal_metric_name}_{p}.npy')
         length = len(section)
         mAUC.append(partition_mean_auc(section, manip_scores))
         sec_length.append(length)
     return (mAUC,sec_length)
 
-all_data = ['MFC18_small']
+all_data = ['MFC18_small','imd2020' , 'korus']
 for dataset in all_data:
     GT_size, h_len = all_partitions_auc(dataset)
 
@@ -43,7 +43,12 @@ for dataset in all_data:
         
     
     # Multiple bar chart
-    plt.boxplot(x = [_df['<.2'][:187], _df['.2-.4'][:135], _df['.4-.6'][:331], _df['.6-.8'][:136], _df['>.8'][:338]])
+    g_1 = 0 #length of group 1
+    g_2 = 0 #length of group 2
+    g_3 = 0 #length of group 3
+    g_4 = 0 #length of group 4
+    g_5 = 0 #length of group 5
+    plt.boxplot(x = [_df['<.2'][:g_1], _df['.2-.4'][:g_2], _df['.4-.6'][:g_3], _df['.6-.8'][:g_4], _df['>.8'][:g_5]])
         
     plt.xlabel(f"Manipulation saliency Using Combined map {sal_metric_name}")
     plt.ylabel(f"% Manipulated")
