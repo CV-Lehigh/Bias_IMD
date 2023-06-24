@@ -51,6 +51,6 @@ Manipulation Size graphs --
 
 &emsp; 2. Run ```python find lengths.py```
 
-&emsp; 3. Place length of partitions of desired dataset in variables g1-5 in boxplot.py file and change name of value in 
+&emsp; 3. Place length of partitions of desired dataset in variables g1-5 in boxplot.py file and change name of dataset in all_data ('imd2020', 'MFC18_small', 'korus')
 
 &emsp; 4. Run ```python boxplot.py```
