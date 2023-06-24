@@ -2,8 +2,9 @@
 
 # reproducing the results
 ## 1. Gathering data --
+Gdrive link: https://drive.google.com/drive/folders/1F1fjItFjeBShbu0F1bu5mnMhtYo1Ayf9?usp=sharing
 1. Download the saliency predictions from the Gdrive link and place in the 'Exploring_bias_in_IMD/' folder -- ***inference_outputs***
-2. Download the Manipulation predictions from this Gdrive link and place in the 'Exploring_bias_in_IMD/' folder -- ***Manipulation_masks***
+2. Download the Manipulation predictions from the Gdrive link and place in the 'Exploring_bias_in_IMD/' folder -- ***Manipulation_masks***
    
 File structure should look a little like: 
 
