@@ -48,6 +48,9 @@ delta_split.py -- Will tell you how many images moved from one saliency group to
 Manipulation Size graphs -- 
 
 &emsp; 1. Navigate to the 'Exploring_bias_in_IMD/analysis_scipts/' folder
+
 &emsp; 2. Run ```python find lengths.py```
-&emsp; 3. Place length of desired dataset partitions in group1-5 in boxplot.py file
+
+&emsp; 3. Place length of partitions of desired dataset in variables g1-5 in boxplot.py file and change name of value in 
+
 &emsp; 4. Run ```python boxplot.py```
