@@ -49,5 +49,5 @@ Manipulation Size graphs --
 
 &emsp; 1. Navigate to the 'Exploring_bias_in_IMD/analysis_scipts/' folder
 &emsp; 2. Run ```python find lengths.py```
-&emsp; 3. 
-
+&emsp; 3. Place length of desired dataset partitions in group1-5 in boxplot.py file
+&emsp; 4. Run ```python boxplot.py```
