@@ -173,7 +173,7 @@ manip_metric = roc_auc_score
 manip_metric_name = "ROC"
 
 #datasets to be run on 
-dataset = ['korus', 'korus_resize', 'korus_SE', 'MFC18_formatted_single_small', 'MFC18_resize', 'MFC18_SE', 'IMD2020_formatted', 'IMD2020_resize', 'IMD2020_SE']
+dataset = ['korus', 'korus_size_up', 'korus_SE', 'MFC18_formatted_single_small', 'MFC18_resize', 'MFC18_SE', 'IMD2020_formatted', 'IMD2020_resize', 'IMD2020_SE']
 for data in dataset:
     #this takes a while
     print(f'dataset: {data}')
