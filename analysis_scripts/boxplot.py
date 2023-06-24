@@ -30,7 +30,7 @@ def all_partitions_auc(dataset):
         sec_length.append(length)
     return (mAUC,sec_length)
 
-all_data = ['MFC18_small','imd2020' , 'korus']
+all_data = ['korus']
 for dataset in all_data:
     GT_size, h_len = all_partitions_auc(dataset)
 
