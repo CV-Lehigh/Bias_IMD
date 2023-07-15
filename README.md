@@ -6,6 +6,7 @@
 ``` conda env create -f environment.yml ```
  
 Gdrive link: 
+
 2. Download the saliency maps and manipulation predictions from the Gdrive link and place in the 'Exploring_bias_in_IMD/' folder
 3. Then unzip the folder ``` unzip WIFS_ready.zip ```
    
