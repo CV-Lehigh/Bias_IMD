@@ -10,25 +10,27 @@
    
 File structure should look a little like: 
 
-|-- Exploring_bias_in_IMD/
-
-&emsp;|-- analysis_scripts/
-
-&emsp;|-- WIFS_ready/
-
-&emsp;&emsp;|-- manipulation_prediction/
-
-&emsp;&emsp;|-- manipulation_scores/
-
-&emsp;&emsp;|-- masks/
-
-&emsp;&emsp;|-- performance/
-
-&emsp;&emsp;|-- sal_groups/
-
-&emsp;&emsp;|-- saliency_predictions/
-
-&emsp;&emsp;|-- manipulation_scores/
+### Directory Structure  
+<pre>Exploring_bias_in_IMD 
+ ┬  
+ ├ [DIR] analysis_scripts   
+     ┬  
+     ├ boxplot.py
+     ├ combine_maps.py  
+     ├ metric_calculations.py 
+     ├ find_length.py
+     ├ split_datasets.p
+     └ visualisation.py  
+├ [DIR] WIFS_ready
+     ┬   
+     ├ [DIR] manipulation_predictions
+     ├ [DIR] manipulation_scores
+     ├ [DIR] mask
+     ├ [DIR] performance
+     ├ [DIR] sal_groups
+     ├ [DIR] saliency_predictions
+     └ [DIR] saliency_scores  
+</pre>
 
 
 
