@@ -21,7 +21,7 @@ File structure should look a little like:
      ├ find_length.py
      ├ split_datasets.p
      └ visualisation.py  
-├ [DIR] WIFS_ready
+ ├ [DIR] WIFS_ready
      ┬   
      ├ [DIR] manipulation_predictions
      ├ [DIR] manipulation_scores
