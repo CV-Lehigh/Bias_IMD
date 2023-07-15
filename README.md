@@ -4,33 +4,33 @@
 ## 1. Set up and downloading data --
 1. create a conda environment
 ``` conda env create -f environment.yml ```
- 
-Gdrive link: 
-
 2. Download the saliency maps and manipulation predictions from the Gdrive link and place in the 'Exploring_bias_in_IMD/' folder
+&emsp; GDrive link:
 3. Then unzip the folder ``` unzip WIFS_ready.zip ```
    
 File structure should look a little like: 
 
-Exploring_bias_in_IMD/
+|-- Exploring_bias_in_IMD/
 
-&emsp; analysis_scripts/
+&emsp;|-- analysis_scripts/
 
-&emsp; WIFS_ready/
+&emsp;|-- WIFS_ready/
 
-&emsp; &emsp; manipulation_prediction/
+&emsp;&emsp;|-- manipulation_prediction/
 
-&emsp; &emsp; manipulation_scores/
+&emsp;&emsp;|-- manipulation_scores/
 
-&emsp; &emsp; masks/
+&emsp;&emsp;|-- masks/
 
-&emsp; &emsp; performance/
+&emsp;&emsp;|-- performance/
 
-&emsp; &emsp; sal_groups/
+&emsp;&emsp;|-- sal_groups/
 
-&emsp; &emsp; saliency_predictions/
+&emsp;&emsp;|-- saliency_predictions/
 
-&emsp; &emsp; manipulation_scores/
+&emsp;&emsp;|-- manipulation_scores/
+
+
 
 ### (optional) regenerate Combine Map
 This is not nessary because it is already in the file but if you would like to you can regenerate the combination for the u2net and r3net (Note: you will have to change 2 lines of code when constructing MFC18_resize and imd2020_resize)
