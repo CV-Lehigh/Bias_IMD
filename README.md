@@ -31,8 +31,8 @@ File structure should look a little like:
      ├ [DIR] sal_groups
      ├ [DIR] saliency_predictions
      └ [DIR] saliency_scores  
-  ├ README.md
-  └ environment.yml
+ ├ README.md
+ └ environment.yml
 </pre>
 
 
