@@ -64,10 +64,10 @@ Now based on the saliency groups you can get the average area under ROC for seve
 # Supplimental Scripts
 Manipulation Size Box and Whisker Plot -- Will display a boxz and whisker plot of the size of manipulation in each saliency group
 
-&emsp; 1. Navigate to the 'Exploring_bias_in_IMD/analysis_scipts/' folder
+&emsp; 1. Navigate to the 'Exploring_bias_in_IMD/' folder
 
-&emsp; 2. Run ```python find_lengths.py```
+&emsp; 2. Run ```python analysis_scipts/find_lengths.py```
 
 &emsp; 3. Place length of partitions of desired dataset in variables g1-5 in boxplot.py file and change name of dataset in all_data ('imd2020', 'MFC18_small', 'korus')
 
-&emsp; 4. Run ```python boxplot.py```
+&emsp; 4. Run ```python analysis_scipts/boxplot.py```
