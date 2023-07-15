@@ -62,8 +62,6 @@ Now based on the saliency groups you can get the average area under ROC for seve
 (you should be able to see a bar graph for each of the datasets and each model performed on each saliency group in WIFS_ready/performance/)
 
 # Supplimental Scripts
-delta_split.py -- Will tell you how many images moved from one saliency group to another after saliency enhancement
-
 Manipulation Size Box and Whisker Plot -- Will display a boxz and whisker plot of the size of manipulation in each saliency group
 
 &emsp; 1. Navigate to the 'Exploring_bias_in_IMD/analysis_scipts/' folder
