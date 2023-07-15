@@ -1,5 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from itertools import cycle, islice
+from matplotlib import colors as mcolors
+
 import pandas as pd
 
 def load_numpy(path):
@@ -14,6 +17,7 @@ split_metric_name = "and_or_threshold"
 
 def partition_mean_auc(partition_list, manip_score_list):
     partition_aucs = []
+    count = 0
     for filename in partition_list:
         try:
             index = np.where(manip_score_list[:,0] == filename[:len(filename)-4]+'.jpg')[0][0]
@@ -28,8 +32,9 @@ def partition_mean_auc(partition_list, manip_score_list):
                     index = np.where(manip_score_list[:,0] == filename[:len(filename)-4]+'.png')[0][0]
                     partition_aucs.append(float(manip_score_list[index][1]))
                 except:
-                    print(f'failed: {filename}')
-    return np.mean(partition_aucs)
+                    count += 1
+    # print(f'failed: {count}')
+    return (np.mean(partition_aucs)*100), count
 
 def all_partitions_auc(network, dataset):
     split_type = dataset
@@ -43,27 +48,28 @@ def all_partitions_auc(network, dataset):
     mAUC = []
     sec_length = []
     partition = ['under_two', 'two_to_four', 'four_to_six', 'six_to_eight', 'above_eight']
-    manip_scores = load_numpy(f'scores/{network}_{manip_metric_name}_{dataset}.npy')
+    manip_scores = load_numpy(f'./WIFS_ready/manipulation_scores/{network}_{manip_metric_name}_{dataset}.npy')
     for p in partition:
-        section = load_numpy(f'data_splits/5_split/{split_type}_{sal_metric_name}_{split_metric_name}_{p}.npy')
+        section = load_numpy(f'./WIFS_ready/sal_groups/{split_type}_{sal_metric_name}_{split_metric_name}_{p}.npy')
         length = len(section)
-        mAUC.append(partition_mean_auc(section, manip_scores))
-        sec_length.append(length)
+        mean, failed = partition_mean_auc(section, manip_scores)
+        mAUC.append(mean)
+        sec_length.append((length-failed))
     return (mAUC,sec_length)
 
 
-all_data = ['imd2020','imd2020_resize','imd2020_SE', 'MFC18_small', 'MFC18_resize', 'MFC18_SE']
+# all_data = ['imd2020','imd2020_resize','imd2020_SE', 'MFC18_small', 'MFC18_resize', 'MFC18_SE']
 
 #To include human results with a korus dataset un-comment:
-'''all_data = ['korus', 'korus_size_up', korus_SE']'''
+all_data = ['korus','MFC18_small', 'imd2020', 'korus_size_up', 'MFC18_resize', 'imd2020_resize', 'korus_SE', 'MFC18_SE', 'imd2020_SE']
 for dataset in all_data:
     dataset_display = dataset
     if(dataset == 'korus_SE'):
-        dataset_display = 'Korus Saliency Enhanced'
+        dataset_display = 'Saliency Enhanced'
     if(dataset == 'korus'):
-        dataset_display = 'Korus'
+        dataset_display = 'Realistic Tampering'
     if(dataset == 'korus_size_up'):
-        dataset_display = 'Korus Resized'
+        dataset_display = 'Resized'
 
 
     if(dataset == 'MFC18_small'):
@@ -81,45 +87,83 @@ for dataset in all_data:
     if(dataset == 'imd2020_resize'):
         dataset_display = 'IMD2020 Resized'
 
-    plt.figure(figsize=(6,6))
+    plt.figure(figsize=(8,10))
     PSCC, p_len = all_partitions_auc('pscc', dataset)
     OSN, o_len = all_partitions_auc('osn', dataset)
     ManTraNet, m_len = all_partitions_auc('mantranet', dataset)
     BusterNet, b_len = all_partitions_auc('busternet', dataset)
     #1. To include human results with a korus dataset un-comment:
-    ''' 
+    
     if(dataset == 'korus_size_up'):
-        human_study, h_len = all_partitions_auc('human_study_manip', 'korus') 
-    else:
-        human_study, h_len = all_partitions_auc('human_study_manip', dataset) 
-    '''
+        human_study, h_len = all_partitions_auc('human_manip', 'korus') 
+    elif(dataset == 'korus' or dataset == 'korus_SE'):
+        human_study, h_len = all_partitions_auc('human_manip', dataset) 
+    
 
+    idx_0 = f'<.2 ({p_len[0]})'
+    idx_1 = f'.2-.4 ({p_len[1]})'
+    idx_2 = f'.4-.6 ({p_len[2]})'
+    idx_3 = f'.6-.8 ({p_len[3]})'
+    idx_4 = f'>.8 ({p_len[4]})'
 
     #2. To include human results with a korus dataset comment out next two lines:
-    _data = {'PSCC': PSCC, 'OSN': OSN, 'ManTraNet':ManTraNet, 'BusterNet': BusterNet}
-    _df = pd.DataFrame(_data,columns=['PSCC', 'OSN', 'ManTraNet', 'BusterNet'], index = ['<.2', '.2-.4', '4.-.6', '.6-.8', '>.8'])
+    _data = {'PSCC-Net': PSCC, 'OSN': OSN, 'ManTra-Net':ManTraNet, 'BusterNet': BusterNet}
+    _df = pd.DataFrame(_data,columns=['BusterNet', 'PSCC-Net', 'ManTra-Net', 'OSN'], index = [idx_0, idx_1, idx_2, idx_3, idx_4])
 
+    amt = 20
+    my_colors = list(islice(cycle([	(131/255.0,178/255.0,208/255.0,1.0), (226/255.0, 116/255.0, 41/255.0,1.0),	(149/255.0,218/255.0,182/255.0,1.0),(220/255.0,133/255.0,128/255.0,1.0)]), None, len(_df)))
+    ax = _df.plot.bar(align='center', width = .6, color = my_colors)
+    
     #3. To include human results with a korus dataset un-comment:
-    '''
-    _data = {'PSCC': PSCC, 'OSN': OSN, 'ManTraNet':ManTraNet, 'BusterNet': BusterNet, 'Human Pred.': human_study}
-    _df = pd.DataFrame(_data,columns=['PSCC', 'OSN', 'ManTraNet', 'BusterNet', 'Human Pred.'], index = ['<.2', '.2-.4', '4.-.6', '.6-.8', '>.8'])
-    '''
+    if('korus' in dataset):
+        _data = {'BusterNet': BusterNet,'PSCC-Net': PSCC, 'ManTra-Net':ManTraNet, 'OSN': OSN, 'Human Pred.': human_study}
+        _df = pd.DataFrame(_data,columns=['BusterNet','PSCC-Net', 'ManTra-Net','OSN', 'Human Pred.'], index = [idx_0, idx_1, idx_2, idx_3, idx_4])
+        my_colors = list(islice(cycle([	(131/255.0,178/255.0,208/255.0,1.0), (226/255.0, 116/255.0, 41/255.0,1.0),	(149/255.0,218/255.0,182/255.0,1.0),(220/255.0,133/255.0,128/255.0,1.0), 'tab:gray']), None, len(_df)))
+        ax = _df.plot.bar(align='center', width = .6, color = my_colors)
+        amt +=5
 
     # Multiple bar chart
-    ax = _df.plot.bar()
+    #.18
+    
+
+    if('korus' in dataset):
+        # ax.patches[20].set_width(.18)
+        # ax.patches[20].set_x(.22)
+        ax.patches[20].set_hatch('//')
+        ax.patches[20].set_fill(False)
+        # ax.patches[21].set_width(.18)
+        # ax.patches[21].set_x(1.22)
+        ax.patches[21].set_hatch('//')
+        ax.patches[21].set_fill(False)
+        # ax.patches[22].set_width(.18)
+        # ax.patches[22].set_x(2.22)
+        ax.patches[22].set_hatch('//')
+        ax.patches[22].set_fill(False)
+        # ax.patches[23].set_width(.18)
+        # ax.patches[23].set_x(3.22)
+        ax.patches[23].set_hatch('//')
+        ax.patches[23].set_fill(False)
+        # ax.patches[24].set_width(.18)
+        # ax.patches[24].set_x(4.22)
+        ax.patches[24].set_hatch('//')
+        ax.patches[24].set_fill(False)
+
 
     #4. To include human results with a korus dataset change 20 to 25:
-    for p in range(20):
-        ax.annotate(f'{ax.patches[p].get_height():.2f}', (ax.patches[p].get_x() -.07, ax.patches[p].get_height() * 1.005), fontsize = 10)
+    for p in range(amt):
+        val = 10
+        ax.annotate(f'{ax.patches[p].get_height():2.0f}', (ax.patches[p].get_x(), ax.patches[p].get_height() * 1.015), fontsize = val, rotation=45)
         
     # Display the plot
-    plt.xlabel(f"Saliency Of Manipulation Using {sal_metric_display}")
-    plt.ylabel(f"Average Area Under {manip_metric_name}")
-    plt.ylim(0.0, 1.05)
-    plt.title(f"{dataset_display} Manipulation Detection")
+    ax.set_xticklabels([idx_0, idx_1, idx_2, idx_3, idx_4], rotation=0, ha='center',fontsize=12)
+    plt.xlabel(f"Saliency Of Manipulation Using {sal_metric_display}", labelpad=12, fontsize=12)
+    plt.ylabel(f"Average AuROC", labelpad=12, fontsize =12)
+    plt.yticks(fontsize=12)
+    plt.ylim(0,110)
+    plt.title(f"{dataset_display}")
     plt.tight_layout()
     plt.legend(loc='lower left', title='Networks')
     plt.show()
-    plt.savefig(f"mAUC_wrt_saliency_graphs/{dataset}_{sal_metric_name}_{split_metric_name}_{manip_metric_name}.png")
-    print(f"mAUC_wrt_saliency_graphs/{dataset}_{sal_metric_name}_{split_metric_name}_{manip_metric_name}.png")
+    plt.savefig(f"./WIFS_ready/performance/{dataset}_{sal_metric_name}_{split_metric_name}_{manip_metric_name}.png")
+    print(f"./WIFS_ready/performance/{dataset}_{sal_metric_name}_{split_metric_name}_{manip_metric_name}.png")
     plt.clf()
