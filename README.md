@@ -15,6 +15,7 @@ File structure should look a little like:
  ┬  
  ├ [DIR] analysis_scripts   
      ┬  
+     ├ [DIR] manip_size
      ├ boxplot.py
      ├ combine_maps.py  
      ├ metric_calculations.py 
@@ -30,6 +31,8 @@ File structure should look a little like:
      ├ [DIR] sal_groups
      ├ [DIR] saliency_predictions
      └ [DIR] saliency_scores  
+  ├ README.md
+  └ environment.yml
 </pre>
 
 
