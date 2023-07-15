@@ -30,7 +30,7 @@ def all_partitions_auc(dataset):
         sec_length.append(length)
     return (mAUC,sec_length)
 
-all_data = ['korus']
+all_data = ['korus', 'MFC18_small', 'imd2020']
 for dataset in all_data:
     GT_size, h_len = all_partitions_auc(dataset)
 
@@ -43,7 +43,8 @@ for dataset in all_data:
         
     
     # Multiple bar chart
-    plt.boxplot(x = [_df['<.2'][:15], _df['.2-.4'][:29], _df['.4-.6'][:39], _df['.6-.8'][:33], _df['>.8'][:14]])
+    plt.boxplot(x = [_df['<.2'][:h_len[0]], _df['.2-.4'][:h_len[1]], _df['.4-.6'][:h_len[2]], _df['.6-.8'][:h_len[3]], _df['>.8'][:h_len[4]]])
+
         
     plt.xlabel(f"Manipulation saliency Using Combined map {sal_metric_name}")
     plt.ylabel(f"% Manipulated")
