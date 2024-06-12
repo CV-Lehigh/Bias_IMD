@@ -53,10 +53,12 @@ Output: (image name, image content)
 '''
 def load_image(path, img_name):
     for filename in sorted(os.listdir(path)):
-        if(img_name[:len(img_name)-3] in filename):
+        if(img_name[:len(img_name)-4] in filename):
             path = os.path.join(path,filename)
             image = cv.imread(path,0).astype(np.float64)
             return (filename,image)
+    return -1
+
 
 '''
 Function: Get recall of an image at multiple thresholds 0,.2,.4,.6,.8,1.0
@@ -108,6 +110,10 @@ def AUC_all(masks, folder, manip_or_sal_func):
         img_name = images[0] #get image name
         sal_img = load_image(folder, img_name) #load saliency mask
 
+        if(sal_img == -1):
+            print(f'{img_name}: skip')
+            continue
+
         #binarize groundtruth from 0-1
         ret, thresh1 = cv.threshold(images[1],1,255,cv.THRESH_BINARY) 
         thresh1[thresh1 > 1] = 1 #set all manipulated pixels of mask to 1
@@ -119,7 +125,8 @@ def AUC_all(masks, folder, manip_or_sal_func):
             any_AUC.append([img_name, AUC])
         else:
             #Do reshaping if nessary (usually very small re-shaping)
-            print('Reshape Required')
+            # print(np.shape(thresh1))
+            # print(np.shape(sal_img[1]))
             new_img = cv.resize(thresh1, np.shape(sal_img[1])[:2], interpolation= cv.INTER_LINEAR)
             AUC = manip_or_sal_func(new_img.flatten(), (sal_img[1]/255.0).flatten())
             any_AUC.append([img_name, AUC])
@@ -164,6 +171,45 @@ def get_manip_size(masks):
         all_percentage.append([img_name, manip_percent])
     return all_percentage
 
+def get_manip_location(masks):
+    all_loc = []
+    for images in tqdm(masks):
+        mask_region = [0]*9
+        img_name = images[0]
+        height, width = images[1].shape[:2]
+        quadrant_h = int(height/3)
+        quadrant_w = int(width/3)
+
+
+        ret, thresh1 = cv.threshold(images[1],1,255,cv.THRESH_BINARY)
+        thresh1[thresh1 > 1] = 1
+        for i in range(len(thresh1)):
+            for j in range(len(thresh1[0])):
+                if(thresh1[i][j] == 1):
+                    if(i < quadrant_h and j < quadrant_w):
+                        mask_region[0] = mask_region[0] + 1
+                    elif(i < quadrant_h and j >= quadrant_w and j < (2*quadrant_w)):
+                        mask_region[1] = mask_region[1] + 1
+                    elif(i < quadrant_h and j >= (2*quadrant_w)):
+                        mask_region[2] = mask_region[2] + 1
+                    elif(i >= quadrant_h and i < (2* quadrant_h) and j < quadrant_w):
+                        mask_region[3] = mask_region[3] + 1
+                    elif(i >= quadrant_h and i < (2* quadrant_h) and j >= quadrant_w and j < (2*quadrant_w)):
+                        mask_region[4] = mask_region[4] + 1
+                    elif(i >= quadrant_h and i < (2* quadrant_h) and j >= (2*quadrant_w)):
+                        mask_region[5] = mask_region[5] + 1
+
+                    elif(i >= (2* quadrant_h) and j < quadrant_w):
+                        mask_region[6] = mask_region[6] + 1
+                    elif(i >= (2* quadrant_h) and j >= quadrant_w and j < (2*quadrant_w)):
+                        mask_region[7] = mask_region[7] + 1
+                    elif(i >= (2* quadrant_h) and j >= (2*quadrant_w)):
+                        mask_region[8] = mask_region[8] + 1
+        region = np.argmax(mask_region)
+        all_loc.append([img_name, region])
+    return all_loc
+
+
 
 #KManipulation and saliency metrics
 sal_metric = mean_recall
@@ -173,7 +219,7 @@ manip_metric = roc_auc_score
 manip_metric_name = "ROC"
 
 #datasets to be run on 
-dataset = ['korus', 'korus_size_up', 'korus_SE', 'MFC18_formatted_single_small', 'MFC18_resize', 'MFC18_SE', 'IMD2020_formatted', 'IMD2020_resize', 'IMD2020_SE']
+dataset = ['korus', 'korus_SE', 'korus_size_up', 'IMD2020_formatted', 'IMD2020_SE', 'IMD2020_resize', 'MFC18_formatted_single_small', 'MFC18_resize', 'MFC18_SE']
 for data in dataset:
     #this takes a while
     print(f'dataset: {data}')
@@ -205,37 +251,39 @@ for data in dataset:
     if(data == 'MFC18_resize'):
         mask_list = 'MFC18_SE'
         
-    mask = load_images_from_path(f'{mask_list}/masks/')
+    mask = load_images_from_path(f'./ICIP_2024/masks/{mask_list}/masks')
 
     '''
     These lines below can be done to find the size of each manipulation in the dataset 
     '''
-    # manip_size = get_manip_size(mask)
-    # np.save(f'saliency_analysis/manip_size/GT_{output_name}', manip_size)
+    manip_region = get_manip_location(mask)
+    print(manip_region)
+    np.save(f'./analysis_scripts/manip_size/GT_{output_name}_region', manip_region)
 
     #analysis networks -- if you want to save time you can remove (u2net and r3net)
         #Note this step does not do inferencing just calculates the mean recall and area under ROC
-    sal_networks = [ 'u2net', 'r3net', 'combine_maps']
-    manip_networks = ['pscc', 'mantranet', 'osn', 'busternet']
+    sal_networks = ['combine_maps']
+    manip_networks = ['pscc', 'mantranet', 'busternet','osn']
 
     # get saliency scores
-    for sal_network in sal_networks:
-        print(f'\t saliency network: {sal_network} with {sal_metric_name}')
-        sal_score = AUC_all(mask, f'inference_outputs/{data}/{sal_network}/', sal_metric)
-        np.save(f'analysis_scripts/scores/{sal_network}_{sal_metric_name}_{output_name}', sal_score)
+    if('IMD2020_SE' not in data or 'MFC18_SE' not in data):
+        for sal_network in sal_networks:
+            print(f'\t saliency network: {sal_network} with {sal_metric_name}')
+            sal_score = AUC_all(mask, f'./ICIP_2024/saliency_predictions/{data}/{sal_network}/', sal_metric)
+            np.save(f'./ICIP_2024/saliency_scores/{sal_network}_{sal_metric_name}_{output_name}', sal_score)
 
-    # get human study scores
+    #get human study scores
     if(data == 'korus' or data == 'korus_SE'):
         print(f'\t saliency network: Human saliency with {sal_metric_name}')
-        human_sal = AUC_all(mask,f'inference_outputs/{data}/Human_study/saliency_prediction/', sal_metric)
-        np.save(f'analysis_scripts/scores/human_study_sal_{sal_metric_name}_{output_name}', human_sal)
+        human_sal = AUC_all(mask,f'./ICIP_2024/{data}/Human_study/sal_{data}', sal_metric)
+        np.save(f'./ICIP_2024/saliency_scores/redo_human_sal_{sal_metric_name}_{output_name}', human_sal)
 
         print(f'\t manipulation network: human manipulation with {manip_metric_name}')
-        human_manip = AUC_all(mask, f'inference_outputs/{data}/Human_study/manipulated_prediction/', manip_metric)
-        np.save(f'analysis_scripts/scores/human_study_manip_{manip_metric_name}_{output_name}', human_manip)
+        human_manip = AUC_all(mask, f'./ICIP_2024/{data}/Human_study/manip_{data}', manip_metric)
+        np.save(f'./ICIP_2024/manipulation_scores/redo_human_manip_{manip_metric_name}_{output_name}', human_manip)
 
-    #get manpulation scores
+    # #get manpulation scores
     for manip_network in manip_networks:
         print(f'\t manipulation network: {manip_network} with {manip_metric_name}')
-        manip_score = AUC_all(mask, f'Manipulation_masks/{data}/{manip_network}_predict_masks/', manip_metric)
-        np.save(f'analysis_scripts/scores/{manip_network}_{manip_metric_name}_{output_name}', manip_score)
+        manip_score = AUC_all(mask, f'./ICIP_2024/manipulation_predictions/{data}/{manip_network}_predict_masks/', manip_metric)
+        np.save(f'./ICIP_2024/manipulation_scores/{manip_network}_{manip_metric_name}_{output_name}', manip_score)
