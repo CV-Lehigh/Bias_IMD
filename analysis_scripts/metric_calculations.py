@@ -1,289 +1,127 @@
-import cv2 as cv
-import numpy as np
 import matplotlib.pyplot as plt
-import os
-from tqdm import tqdm
+import numpy as np
 import os.path
-from sklearn.metrics import roc_auc_score, precision_recall_curve, auc
-from PIL import Image
+import os
+import cv2 as cv
 
-'''
-Function: Load all images from path inputted
-Input: Path to folder of images
-Output: (filename, image content)
-'''
-def load_images_from_path(path):
-    images = []
-    for filename in tqdm(os.listdir(path)):
-            lower_filename = filename.lower() #Not used -- nessar in previous version
+#decide which saliency group each image falls into
+def and_or_threshold(scores):
+    under_two = []
+    two_to_four = []
+    four_to_six = []
+    six_to_eight = []
+    above_eight = []
+    for i in range(len(scores)): #listing through all scores
+        if(float(scores[i][1]) <= .20):
+            under_two.append(scores[i][0])
+        elif(float(scores[i][1])  > .20 and float(scores[i][1]) <= .40):
+            two_to_four.append(scores[i][0])
+        elif(float(scores[i][1])  > .40 and float(scores[i][1]) <= .60):
+            four_to_six.append(scores[i][0])
+        elif(float(scores[i][1])  > .60 and float(scores[i][1]) <= .80):
+            six_to_eight.append(scores[i][0])
+        elif(float(scores[i][1])  > .80):
+            above_eight.append(scores[i][0])
 
-            full_name = os.path.join(path,filename) #full path name
-            image = cv.imread(full_name, 0).astype(np.float64) #load in with doubles (needed for some masks betwwen 0-1)
-            images.append((filename,image)) #add to list
-    return images #return full values
+    return (under_two,two_to_four,four_to_six,six_to_eight,above_eight) #return lists
 
-'''
-def load_images_from_path_coco(path):
-    images = []
-    for filename in tqdm(os.listdir(path)):
-            lower_filename = filename.lower()
-            full_name = os.path.join(path,filename)
-            image = cv.imread(full_name, 0).astype(np.int16)
-            images.append((filename,image))
-    return images
-
-def load_image_coco(path, img_name, part_1, part_2):
-    #needs to be changed per dataset
-    sub_section = img_name.split('_')
-    for filename in sorted(os.listdir(path)):
-        file_parts = filename.split("_")
-        if (sub_section[1] == file_parts[part_1]) and (sub_section[2][:len(sub_section[2])-4] == file_parts[part_2]):
-        # if(img_name[:len(img_name)-3] in filename):
-            path = os.path.join(path,filename)
-            image_attr = Image.open(path).convert('L')
-            image = np.array(image_attr).astype(np.float64)
-            # image = cv.imread(path,0).astype(np.float64)
-            return (filename,image)
-'''
-
-'''
-Function: search for image in list and load Specific image
-Input: path to image, image name
-Output: (image name, image content)
-'''
-def load_image(path, img_name):
-    for filename in sorted(os.listdir(path)):
-        if(img_name[:len(img_name)-4] in filename):
-            path = os.path.join(path,filename)
-            image = cv.imread(path,0).astype(np.float64)
-            return (filename,image)
-    return -1
+def load_numpy(path):
+    values = np.load(path, allow_pickle=True)
+    return values
 
 
-'''
-Function: Get recall of an image at multiple thresholds 0,.2,.4,.6,.8,1.0
-Input: ground truth mask (0-1), saliency map (0-1)
-Output: array of recall scores
-'''
-def std_recall(groundtruth, sal_mask):
-    recall = []
-    for thresh in range(0,10,2):
-        _thresh = thresh/10.0
-        TP = 0.0
-        FN = 0.0
-        ret, sal_thresh = cv.threshold(sal_mask, _thresh, 1, cv.THRESH_BINARY) #theshold mask
-        for i in range(len(groundtruth)): #loop thorugh image
-            if (groundtruth[i] == 1):
-                if(sal_thresh[i] == 1): #True positive
-                    TP += 1
-                elif(sal_thresh[i] == 0): #False Negative
-                    FN += 1
-        thresh_recall = (TP/(TP+FN)) #recall for that threshold
-        recall.append(thresh_recall) #add to list
-    return recall
-
-'''
-Function: get average recall value
-Input: Input: ground truth mask (0-1), saliency map (0-1)
-Output: avg recall
-'''
-def mean_recall(groundtruth, sal_mask):
-    recall = std_recall(groundtruth,sal_mask)
-    avg_recall = np.mean(recall)
-    return avg_recall
-
-'''
-Function: get the area under a PR-Curve 
-WARNING -- UNUSED
-'''
-def PR_AUC(groundtruth, mask):
-    precision, recall, thresholds = precision_recall_curve(groundtruth, mask)
-    return auc(recall, precision)
-
-'''
-Function: Return entire datasets list of either saliency metric (i.e mean recall) or manipulation metric (i.e AUC ROC)
-Input List of masks, folder to saliency masks, evaluation function to be called
-'''
-def AUC_all(masks, folder, manip_or_sal_func):
-    any_AUC = []
-    for images in tqdm(masks):
-        img_name = images[0] #get image name
-        sal_img = load_image(folder, img_name) #load saliency mask
-
-        if(sal_img == -1):
-            print(f'{img_name}: skip')
-            continue
-
-        #binarize groundtruth from 0-1
-        ret, thresh1 = cv.threshold(images[1],1,255,cv.THRESH_BINARY) 
-        thresh1[thresh1 > 1] = 1 #set all manipulated pixels of mask to 1
-
-        #check  images are the same shape
-        if(np.shape(images[1]) == np.shape(sal_img[1])):
-            #run evaluation runction
-            AUC = manip_or_sal_func(thresh1.flatten(), (sal_img[1]/255.0).flatten())
-            any_AUC.append([img_name, AUC])
-        else:
-            #Do reshaping if nessary (usually very small re-shaping)
-            # print(np.shape(thresh1))
-            # print(np.shape(sal_img[1]))
-            new_img = cv.resize(thresh1, np.shape(sal_img[1])[:2], interpolation= cv.INTER_LINEAR)
-            AUC = manip_or_sal_func(new_img.flatten(), (sal_img[1]/255.0).flatten())
-            any_AUC.append([img_name, AUC])
-    return any_AUC
-
-
-# def AUC_COCO(masks, folder, manip_or_sal_func,part_1,part_2):
-#     any_AUC = []
-#     for images in tqdm(masks):
-#         img_name = images[0]
-#         sal_img = load_image_coco(folder, img_name,part_1,part_2)
-
-#         if(np.shape(images[1]) == np.shape(sal_img[1])):
-#             AUC = manip_or_sal_func(images[1].flatten(), (sal_img[1]/255.0).flatten())
-#             any_AUC.append([sal_img[0], AUC])
-#         else:
-#             new_img = cv.resize(images[1], np.shape(sal_img[1])[:2], interpolation= cv.INTER_LINEAR)
-#             AUC = manip_or_sal_func(new_img.flatten(), (sal_img[1]/255.0).flatten())
-#             any_AUC.append([sal_img[0], AUC])
-#     return any_AUC
-
-
-'''
-Function: Get the percentage of an image that was manipulated
-Input: [nx[hxw]] list of binary groundtruth masks
-'''
-def get_manip_size(masks):
-    all_percentage = []
-    for images in tqdm(masks):
-        manip_count = 0.0
-        img_name = images[0]
-        height, width = images[1].shape[:2]
-
-        ret, thresh1 = cv.threshold(images[1],1,255,cv.THRESH_BINARY)
-        thresh1[thresh1 > 1] = 1
-
-        thresh_flatten = thresh1.flatten()
-        for i in range(len(thresh_flatten)):
-            if (thresh_flatten[i] == 1):
-                manip_count +=1
-        manip_percent = manip_count/(height*width)
-        all_percentage.append([img_name, manip_percent])
-    return all_percentage
-
-def get_manip_location(masks):
-    all_loc = []
-    for images in tqdm(masks):
-        mask_region = [0]*9
-        img_name = images[0]
-        height, width = images[1].shape[:2]
-        quadrant_h = int(height/3)
-        quadrant_w = int(width/3)
-
-
-        ret, thresh1 = cv.threshold(images[1],1,255,cv.THRESH_BINARY)
-        thresh1[thresh1 > 1] = 1
-        for i in range(len(thresh1)):
-            for j in range(len(thresh1[0])):
-                if(thresh1[i][j] == 1):
-                    if(i < quadrant_h and j < quadrant_w):
-                        mask_region[0] = mask_region[0] + 1
-                    elif(i < quadrant_h and j >= quadrant_w and j < (2*quadrant_w)):
-                        mask_region[1] = mask_region[1] + 1
-                    elif(i < quadrant_h and j >= (2*quadrant_w)):
-                        mask_region[2] = mask_region[2] + 1
-                    elif(i >= quadrant_h and i < (2* quadrant_h) and j < quadrant_w):
-                        mask_region[3] = mask_region[3] + 1
-                    elif(i >= quadrant_h and i < (2* quadrant_h) and j >= quadrant_w and j < (2*quadrant_w)):
-                        mask_region[4] = mask_region[4] + 1
-                    elif(i >= quadrant_h and i < (2* quadrant_h) and j >= (2*quadrant_w)):
-                        mask_region[5] = mask_region[5] + 1
-
-                    elif(i >= (2* quadrant_h) and j < quadrant_w):
-                        mask_region[6] = mask_region[6] + 1
-                    elif(i >= (2* quadrant_h) and j >= quadrant_w and j < (2*quadrant_w)):
-                        mask_region[7] = mask_region[7] + 1
-                    elif(i >= (2* quadrant_h) and j >= (2*quadrant_w)):
-                        mask_region[8] = mask_region[8] + 1
-        region = np.argmax(mask_region)
-        all_loc.append([img_name, region])
-    return all_loc
-
-
-
-#KManipulation and saliency metrics
-sal_metric = mean_recall
 sal_metric_name = "mean_recall"
+sal_metric_display = "mean recall"
+split_metric_name = "and_or_threshold"
 
-manip_metric = roc_auc_score
-manip_metric_name = "ROC"
+all_sets= [['korus', 'MFC18_small', 'imd2020'], ['korus_size_up', 'MFC18_resize', 'imd2020_resize'], ['korus_SE']]
 
-#datasets to be run on 
-dataset = ['korus', 'korus_SE', 'korus_size_up', 'IMD2020_formatted', 'IMD2020_SE', 'IMD2020_resize', 'MFC18_formatted_single_small', 'MFC18_resize', 'MFC18_SE']
-for data in dataset:
-    #this takes a while
-    print(f'dataset: {data}')
+for j in range(len(all_sets)):
+    sums = []
+    lens = []
+    postfix_name = ''
+    if j == 1:
+        postfix_name = '_size_up'
+    if j == 2:
+        postfix_name = '_SE'
 
-    #Decide output names
-    output_name = data
-    if('IMD2020_formatted' in data):
-        output_name = 'imd2020'
-        print(output_name)
+    datasets = all_sets[j]
+    for i in datasets:
 
-    if('IMD2020_SE' in data):
-        output_name = 'imd2020_SE'
-        print(output_name)
-    
-    if('IMD2020_resize' in data):
-        output_name = 'imd2020_resize'
-        print(output_name)
+        #name formatting for graphs
+        dataset_display = i
+        if(i == 'korus_SE'):
+            dataset_display = 'Realistic Tampering Saliency Enhanced'
+        if(i == 'korus'):
+            dataset_display = 'Realistic Tampering'
+        if(i == 'korus_size_up'):
+            dataset_display = 'Realistic Tampering Resized'
 
-    elif('MFC18_formatted_single_small' in data):
-        output_name = 'MFC18_small'
-        print(output_name)
+        #load scores
+        scores = load_numpy(f'./ICIP_2024/saliency_scores/combine_maps_{sal_metric_name}_{i}.npy')
 
-    #load mask 
-    mask_list = data
-    if(data == 'korus_size_up'):
-        mask_list = 'korus_SE'
-    if(data == 'IMD2020_resize'):
-        mask_list = 'IMD2020_SE'
-    if(data == 'MFC18_resize'):
-        mask_list = 'MFC18_SE'
+        #human split -- only on korus dataset
+        if(i == 'korus' or i == 'korus_SE'):
+            sal_scores = load_numpy(f'./ICIP_2024/saliency_scores/redo_human_sal_{sal_metric_name}_{i}.npy')
+            under_two,two_to_four,four_to_six,six_to_eight, above_eight = and_or_threshold(sal_scores)
+            np.save(f'./ICIP_2024/sal_groups/{i}_{sal_metric_name}_human_under_two', under_two)
+            np.save(f'./ICIP_2024/sal_groups/{i}_{sal_metric_name}_human_two_to_four', two_to_four)
+            np.save(f'./ICIP_2024/sal_groups/{i}_{sal_metric_name}_human_four_to_six', four_to_six)
+            np.save(f'./ICIP_2024/sal_groups/{i}_{sal_metric_name}_human_six_to_eight', six_to_eight)
+            np.save(f'./ICIP_2024/sal_groups/{i}_{sal_metric_name}_human_above_eight', above_eight)
+
+            #plot graph -- for human map split
+            sum = (len(under_two)+len(two_to_four)+len(four_to_six)+len(six_to_eight)+len(above_eight))
+            plt.bar(['<.2', '.2-.4','.4-.6','.6-.8', '>.8'],[len(under_two)/sum,len(two_to_four)/sum,len(four_to_six)/sum, len(six_to_eight)/sum, len(above_eight)/sum],label = 'Realistic Tampering (130)', color = (131/255.0,178/255.0,208/255.0,1.0))
+            plt.xlabel("Saliency Of Manipulation [Mean Recall]")
+            plt.ylabel("Proportion Of Images")
+            plt.ylim(0,.35)
+            plt.title(f"Distribution Of {dataset_display} Human Study")
+            plt.show()
+            plt.savefig(f'./ICIP_2024/sal_groups/histogram/splits_graph_{i}_{sal_metric_name}_human.pdf', dpi=2000)
+            print(f'./ICIP_2024/sal_groups/histogram/splits_graph_{i}_{sal_metric_name}_human.pdf')
+            plt.clf()
+
+
+        #combined map split
+        under_two,two_to_four,four_to_six,six_to_eight,above_eight = and_or_threshold(scores)
+        np.save(f'./ICIP_2024/sal_groups/{i}_{sal_metric_name}_{split_metric_name}_under_two', under_two)
+        np.save(f'./ICIP_2024/sal_groups/{i}_{sal_metric_name}_{split_metric_name}_two_to_four', two_to_four)
+        np.save(f'./ICIP_2024/sal_groups/{i}_{sal_metric_name}_{split_metric_name}_four_to_six', four_to_six)
+        np.save(f'./ICIP_2024/sal_groups/{i}_{sal_metric_name}_{split_metric_name}_six_to_eight', six_to_eight)
+        np.save(f'./ICIP_2024/sal_groups/{i}_{sal_metric_name}_{split_metric_name}_above_eight', above_eight)
+
+        #plot graph -- for combined map split
         
-    mask = load_images_from_path(f'./ICIP_2024/masks/{mask_list}/masks')
+        sum = (len(under_two)+len(two_to_four)+len(four_to_six)+len(six_to_eight)+len(above_eight))
+        # print(len(under_two))
+        # print(len(two_to_four))
+        # print(len(four_to_six))
+        # print(len(six_to_eight))
+        # print(len(above_eight))
+        lens.append([len(under_two)/sum,len(two_to_four)/sum,len(four_to_six)/sum, len(six_to_eight)/sum, len(above_eight)/sum])
 
-    '''
-    These lines below can be done to find the size of each manipulation in the dataset 
-    '''
-    manip_region = get_manip_location(mask)
-    print(manip_region)
-    np.save(f'./analysis_scripts/manip_size/GT_{output_name}_region', manip_region)
+    X = ['<.2', '.2-.4','.4-.6','.6-.8', '>.8']
 
-    #analysis networks -- if you want to save time you can remove (u2net and r3net)
-        #Note this step does not do inferencing just calculates the mean recall and area under ROC
-    sal_networks = ['combine_maps']
-    manip_networks = ['pscc', 'mantranet', 'busternet','osn']
+    X_axis = np.arange(len(X))
 
-    # get saliency scores
-    if('IMD2020_SE' not in data or 'MFC18_SE' not in data):
-        for sal_network in sal_networks:
-            print(f'\t saliency network: {sal_network} with {sal_metric_name}')
-            sal_score = AUC_all(mask, f'./ICIP_2024/saliency_predictions/{data}/{sal_network}/', sal_metric)
-            np.save(f'./ICIP_2024/saliency_scores/{sal_network}_{sal_metric_name}_{output_name}', sal_score)
+    plt.figure(figsize=(15,10))  
+    plt.bar(X_axis - 0.2, lens[0], 0.2, label = 'Realistic Tampering (130)', color = (131/255.0,178/255.0,208/255.0,1.0))
+    if(j != 2):
+        plt.bar(X_axis, lens[1], 0.2, label = 'MFC18 (1127)', color = (226/255.0, 116/255.0, 41/255.0,1.0) )
+        plt.bar(X_axis + 0.2, lens[2], 0.2, label = 'IMD2020 (2007)', color = (149/255.0,218/255.0,182/255.0,1.0))
 
-    #get human study scores
-    if(data == 'korus' or data == 'korus_SE'):
-        print(f'\t saliency network: Human saliency with {sal_metric_name}')
-        human_sal = AUC_all(mask,f'./ICIP_2024/{data}/Human_study/sal_{data}', sal_metric)
-        np.save(f'./ICIP_2024/saliency_scores/redo_human_sal_{sal_metric_name}_{output_name}', human_sal)
+    plt.xticks(X_axis, X, fontsize = 33)
+    plt.yticks(fontsize = 33)
+        
+    plt.xlabel("Saliency Of Manipulation [Mean Recall]", fontsize = 30)
+    plt.ylabel("Proportion Of Images", fontsize = 30)
+    plt.ylim(0,.55)
 
-        print(f'\t manipulation network: human manipulation with {manip_metric_name}')
-        human_manip = AUC_all(mask, f'./ICIP_2024/{data}/Human_study/manip_{data}', manip_metric)
-        np.save(f'./ICIP_2024/manipulation_scores/redo_human_manip_{manip_metric_name}_{output_name}', human_manip)
-
-    # #get manpulation scores
-    for manip_network in manip_networks:
-        print(f'\t manipulation network: {manip_network} with {manip_metric_name}')
-        manip_score = AUC_all(mask, f'./ICIP_2024/manipulation_predictions/{data}/{manip_network}_predict_masks/', manip_metric)
-        np.save(f'./ICIP_2024/manipulation_scores/{manip_network}_{manip_metric_name}_{output_name}', manip_score)
+    # plt.title(f"Distribution of Datasets", fontsize = 30)
+    plt.legend(fontsize=30)
+    plt.tight_layout()
+    plt.show()
+    plt.savefig(f'./ICIP_2024/sal_groups/histogram/proportion_split{postfix_name}.pdf', dpi=2000)
+    print(f'./ICIP_2024/sal_groups/histogram/proportion_split{postfix_name}.pdf')
+    plt.clf()
