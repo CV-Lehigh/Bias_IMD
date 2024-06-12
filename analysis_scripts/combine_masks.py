@@ -21,16 +21,16 @@ def mask_add_and_combine(u2net_image, r3net_image):
 def generate_combination(sal_dir, dataset):
     for image in tqdm(os.listdir(sal_dir)):
         #for MFC18_resize, and imd2020_resize -- ./WIFS_ready/saliency_predictions/{dataset}/original/u2net/
-        u2net_file, u2net_image = load_image(f'./WIFS_ready/saliency_predictions/{dataset}/u2net/', image)
-        r3net_file, r3net_image = load_image(f'./WIFS_ready/saliency_predictions/{dataset}/r3net/', image)
+        u2net_file, u2net_image = load_image(f'./ICIP_2024/saliency_predictions/{dataset}/u2net/', image)
+        r3net_file, r3net_image = load_image(f'./ICIP_2024/saliency_predictions/{dataset}/r3net/', image)
         if(np.shape(u2net_image) == np.shape(r3net_image)):
             new_mask = mask_add_and_combine(u2net_image, r3net_image)
-            cv.imwrite(f'./WIFS_ready/saliency_predictions/{dataset}/combine_maps/{r3net_file}', new_mask)
+            cv.imwrite(f'./ICIP_2024/saliency_predictions/{dataset}/combine_maps/{r3net_file}', new_mask)
         else:
             print(f"not same size: {r3net_file} & {u2net_file}")
 
 
-all_dataset = ['korus', 'korus_size_up', 'MFC18_resize', 'MFC18_formatted_single_small', 'IMD2020_formatted', 'IMD2020_resize']
+all_dataset = ['korus', 'korus_SE', 'korus_size_up', 'IMD2020_formatted', 'IMD2020_SE', 'IMD2020_resize', 'MFC18_formatted_single_small', 'MFC18_resize', 'MFC18_SE']
 for dataset in all_dataset:
     print(f'generating combination maps: {dataset}')
-    generate_combination(f'./WIFS_ready/saliency_predictions/{dataset}/u2net/', dataset)
+    generate_combination(f'./ICIP_2024/saliency_predictions/{dataset}/u2net/', dataset)
