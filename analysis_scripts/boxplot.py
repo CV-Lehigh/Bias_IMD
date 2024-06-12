@@ -24,7 +24,7 @@ def all_partitions_auc(dataset):
     partition = ['under_two', 'two_to_four', 'four_to_six', 'six_to_eight', 'above_eight']
     manip_scores = load_numpy(f'./analysis_scripts/manip_size/GT_{dataset}.npy')
     for p in partition:
-        section = load_numpy(f'./WIFS_ready/sal_groups/{dataset}_{sal_metric_name}_{split_metric_name}_{p}.npy')
+        section = load_numpy(f'./ICIP_2024/sal_groups/{dataset}_{sal_metric_name}_{split_metric_name}_{p}.npy')
         length = len(section)
         mAUC.append(partition_mean_auc(section, manip_scores))
         sec_length.append(length)
