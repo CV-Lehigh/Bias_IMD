@@ -72,3 +72,7 @@ Now based on the saliency groups you can get the average area under ROC for seve
 Manipulation Size Box and Whisker Plot -- Will display a box and whisker plot of the size of manipulation in each saliency group
 
 &emsp; Run ```python analysis_scipts/boxplot.py```
+
+Raw human study data & the code to generate manipulation and prediction masks is available here: 
+
+&emsp; GDrive link: https://drive.google.com/drive/folders/1RE7mUL6I0XNu3mzz3-wWrQ3v47-vdQGA?usp=sharing
