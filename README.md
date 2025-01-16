@@ -1,5 +1,5 @@
 # Exploring_bias_in_IMD
-
+Exploring Saliency Bias in Manipulation Detection has been accepted to **ICIP 2024!!**: https://ieeexplore.ieee.org/document/10648063
 # reproducing the results
 ## 1. Set up and downloading data --
 1. create a conda environment
